@@ -1,0 +1,129 @@
+--------------------------------------------------------
+-- 1. Create Sequence for STOCKID
+--------------------------------------------------------
+CREATE SEQUENCE SEQ_STOCK
+  START WITH 1001
+  INCREMENT BY 1
+  NOCACHE
+  NOCYCLE;
+
+--------------------------------------------------------
+-- 2. Create STOCK Table
+--------------------------------------------------------
+CREATE TABLE STOCK (
+    STOCKID         NUMBER PRIMARY KEY,
+    STOCKNAME       VARCHAR2(100) NOT NULL,
+    STOCKPRICE      NUMBER(12,2) NOT NULL,
+    LISTINGPRICE    NUMBER(12,2) NOT NULL,
+    LISTINGDATE     DATE NOT NULL,
+    LISTEDEXCHANGE  VARCHAR2(100) NOT NULL
+);
+
+--------------------------------------------------------
+-- 3. Trigger to Auto-populate STOCKID using SEQ_STOCK
+--------------------------------------------------------
+CREATE OR REPLACE TRIGGER TRG_STOCK_BI
+BEFORE INSERT ON STOCK
+FOR EACH ROW
+BEGIN
+    IF :NEW.STOCKID IS NULL THEN
+        :NEW.STOCKID := SEQ_STOCK.NEXTVAL;
+    END IF;
+END;
+/
+
+-- Enable the trigger
+ALTER TRIGGER TRG_STOCK_BI ENABLE;
+
+
+--------------------------------------------------------
+-- 1. Create Sequence for Customer ID
+--------------------------------------------------------
+CREATE SEQUENCE SEQ_CUSTOMER
+  START WITH 1
+  INCREMENT BY 1
+  NOCACHE
+  NOCYCLE;
+
+--------------------------------------------------------
+-- 2. Create CUSTOMER Table
+--------------------------------------------------------
+CREATE TABLE CUSTOMER (
+    CUSTOMERID     NUMBER PRIMARY KEY,
+    FIRSTNAME      VARCHAR2(100) NOT NULL,
+    LASTNAME       VARCHAR2(100) NOT NULL,
+    MOBILENUMBER   VARCHAR2(20),
+    EMAIL          VARCHAR2(100) NOT NULL,
+    PANNUMBER      VARCHAR2(100) NOT NULL,
+    PASSWORD       VARCHAR2(255) NOT NULL
+);
+
+--------------------------------------------------------
+-- 3. Unique Constraint on EMAIL
+--------------------------------------------------------
+ALTER TABLE CUSTOMER ADD CONSTRAINT UQ_CUSTOMER_EMAIL UNIQUE (EMAIL);
+
+
+--------------------------------------------------------
+-- 4. Trigger for AUTO-INCREMENTING CUSTOMERID
+--------------------------------------------------------
+CREATE OR REPLACE TRIGGER TRG_CUSTOMER_BI
+BEFORE INSERT ON CUSTOMER
+FOR EACH ROW
+BEGIN
+    IF :NEW.CUSTOMERID IS NULL THEN
+        :NEW.CUSTOMERID := SEQ_CUSTOMER.NEXTVAL;
+    END IF;
+END;
+/
+
+-- Enable the trigger (just in case)
+ALTER TRIGGER TRG_CUSTOMER_BI ENABLE;
+
+
+
+--------------------------------------------------------
+-- 1. Create Sequence for TRANSACTIONID
+--------------------------------------------------------
+CREATE SEQUENCE SEQ_TRANSACTION
+  START WITH 1
+  INCREMENT BY 1
+  NOCACHE
+  NOCYCLE;
+
+--------------------------------------------------------
+-- 2. Create STOCK_TRANSACTION Table
+-- (renamed to avoid using reserved keyword 'TRANSACTION')
+--------------------------------------------------------
+CREATE TABLE transaction (
+    TRANSACTIONID      NUMBER PRIMARY KEY,
+    STOCKID            NUMBER NOT NULL,
+    CUSTOMERID         NUMBER NOT NULL,
+    TRANSACTIONTYPE    VARCHAR2(10) NOT NULL,  -- e.g., 'BUY' or 'SELL'
+    STOCKQUANTITY      NUMBER NOT NULL,
+    TRANSACTIONPRICE   NUMBER(10,2) NOT NULL,
+    TRANSACTIONDATE    DATE NOT NULL,
+
+    -- Foreign Keys
+    CONSTRAINT FK_TRANSACTION_STOCK FOREIGN KEY (STOCKID)
+        REFERENCES STOCK(STOCKID) ON DELETE CASCADE,
+
+    CONSTRAINT FK_TRANSACTION_CUSTOMER FOREIGN KEY (CUSTOMERID)
+        REFERENCES CUSTOMER(CUSTOMERID) ON DELETE CASCADE
+);
+
+--------------------------------------------------------
+-- 3. Trigger to Auto-generate TRANSACTIONID
+--------------------------------------------------------
+CREATE OR REPLACE TRIGGER TRG_TRANSACTION_BI
+BEFORE INSERT ON transaction
+FOR EACH ROW
+BEGIN
+    IF :NEW.TRANSACTIONID IS NULL THEN
+        :NEW.TRANSACTIONID := SEQ_TRANSACTION.NEXTVAL;
+    END IF;
+END;
+/
+
+-- Enable the trigger
+ALTER TRIGGER TRG_TRANSACTION_BI ENABLE;
